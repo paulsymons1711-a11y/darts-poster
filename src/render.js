@@ -23,14 +23,28 @@ function toCard(ev, venueName) {
   };
 }
 
+// Use puppeteer's own Chrome if it's there, otherwise Edge/Chrome already on the PC
+const CANDIDATES = [
+  process.env.CHROME_PATH,
+  undefined, // puppeteer's downloaded browser
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  '/usr/bin/google-chrome',
+];
 let browser;
 async function getBrowser() {
-  if (!browser) browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.CHROME_PATH || undefined,
-    args: ['--no-sandbox'],
-  });
-  return browser;
+  if (browser) return browser;
+  let lastErr;
+  for (let i = 0; i < CANDIDATES.length; i++) {
+    const exe = CANDIDATES[i];
+    if (i !== 1 && (!exe || !fs.existsSync(exe))) continue;
+    try {
+      browser = await puppeteer.launch({ headless: true, executablePath: exe, args: ['--no-sandbox'] });
+      return browser;
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not start a browser to draw images: ' + (lastErr?.message || 'none found'));
 }
 
 // Renders one PNG; design = index or undefined for random. Returns { file, design }

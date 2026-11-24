@@ -16,6 +16,16 @@ if errorlevel 1 (
   exit /b
 )
 
+rem ---- 1b. Remove the old background copy (pm2) from the first version ----
+where pm2 >nul 2>nul
+if not errorlevel 1 (
+  echo Removing the old version that is still running...
+  call pm2 delete darts-poster >nul 2>nul
+  call pm2 save --force >nul 2>nul
+  call pm2 kill >nul 2>nul
+  call pm2-startup uninstall >nul 2>nul
+)
+
 rem ---- 2. App files ----
 echo Installing app files (takes a minute or two)...
 call npm install --omit=dev

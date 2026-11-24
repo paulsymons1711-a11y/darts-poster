@@ -86,9 +86,12 @@ async function refresh() {
       const horizon = Date.now() + (CONFIG.planDaysAhead || 7) * 864e5;
       for (const ev of events) {
         state.events[ev.id] = { ...ev, venueKey: v.key };
-        if (new Date(ev.start) <= horizon) await planEvent(v, ev);
+        if (new Date(ev.start) <= horizon) {
+          try { await planEvent(v, ev); state.lastError = null; }
+          catch (e) { state.lastError = `Couldn't make a post for ${ev.eventName}: ${e.message}`; log(state.lastError); }
+        }
       }
-    } catch (e) { log(`Refresh failed for ${v.displayName}: ${e.message}`); }
+    } catch (e) { state.lastError = `Couldn't read Darts Atlas for ${v.displayName}: ${e.message}`; log(state.lastError); }
   }
   save();
 }
@@ -154,7 +157,7 @@ app.use('/img', express.static(IMG_DIR));
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 app.get('/api/state', (_, res) => res.json({
   venues: CONFIG.venues.map(v => ({ key: v.key, displayName: v.displayName, enabled: v.enabled !== false, postsPerEvent: v.postsPerEvent ?? 2, connected: !!v.facebookPageToken })),
-  dryRun: !!CONFIG.dryRun, slotHours: SLOT_HOURS(), slotStats: state.slotStats,
+  dryRun: !!CONFIG.dryRun, slotHours: SLOT_HOURS(), slotStats: state.slotStats, lastError: state.lastError || null,
   events: Object.values(state.events).filter(e => new Date(e.start) > Date.now()).sort((a, b) => a.start.localeCompare(b.start))
     .map(e => ({ ...e, posts: state.overrides[e.id] ?? venueByKey(e.venueKey)?.postsPerEvent ?? 2 })),
   posts: state.posts.filter(p => p.status !== 'skipped').sort((a, b) => a.when.localeCompare(b.when)).slice(-60),
