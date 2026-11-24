@@ -42,8 +42,15 @@ const $ = s => document.querySelector(s);
 const fmt = iso => new Date(iso).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
 async function act(url, btn, body){ if(btn){btn.disabled=true;btn.textContent='…'}
   await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}); load(); }
+async function api(url){
+  let r; try { r = await fetch(url, { cache: 'no-store' }); } catch (e) { r = null; }
+  if (r && r.status === 401) { location.href = '/login'; throw new Error('login'); }
+  const j = r && r.ok ? await r.json().catch(() => null) : null;
+  if (!j) { $('#banner').innerHTML = '<div class="banner">⚠️ Can\'t reach Darts Poster on the mini PC (it may be restarting after an update). Retrying…</div>'; setTimeout(() => { load(); loadSettings(); }, 10000); throw new Error('offline'); }
+  return j;
+}
 async function load(){
-  const s = await (await fetch('/api/state')).json();
+  const s = await api('/api/state');
   const vName = k => (s.venues.find(v=>v.key===k)||{}).displayName||k;
   $('#banner').innerHTML = (s.dryRun ? '<div class="banner">🧪 <b>Test mode</b> – nothing is sent to Facebook. Turn it off in Settings at the bottom when you're ready.</div>' : '')
     + s.venues.filter(v=>v.enabled!==false&&!v.connected).map(v=>`<div class="banner" style="margin-top:8px">${v.displayName}: Facebook Page not connected yet.</div>`).join('');
@@ -60,7 +67,7 @@ async function load(){
      return `<tr><td>${h}:00</td><td>${t.n}</td><td>${t.n?(t.total/t.n).toFixed(1):'–'}</td></tr>`}).join('');
 }
 async function loadSettings(){
-  const c = await (await fetch('/api/settings')).json();
+  const c = await api('/api/settings');
   $('#settings').innerHTML = `<div class="card"><label class="sw"><input type="checkbox" id="dry" ${c.dryRun?'checked':''}> Test mode (don't post to Facebook)</label>
     <label>Posting times to try (24h, comma separated)</label><input type="text" id="hours" value="${c.slotHours.join(', ')}">
     <label>Plan posts this many days ahead</label><input type="number" id="days" value="${c.planDaysAhead}"></div>`
@@ -90,7 +97,7 @@ async function saveSettings(btn){
   btn.disabled = false; $('#saved').textContent = '✓ Saved'; setTimeout(()=>$('#saved').textContent='',3000); loadSettings(); load();
 }
 async function checkUpdate(btn){ btn.disabled=true; $('#upd').textContent='Checking…';
-  const r = await (await fetch('/api/update/check',{method:'POST'})).json();
+  const r = await (await fetch('/api/update/check',{method:'POST'})).json().catch(()=>({installing:true,message:'update'}));
   $('#upd').textContent = r.error ? '⚠️ '+r.error : r.installing ? '⬇️ Installing "'+r.message+'" – restarting, reload in 30s' : '✓ Up to date ('+r.message+')'; btn.disabled=false; }
 load(); loadSettings(); setInterval(load, 60000);
 </script></body></html>
