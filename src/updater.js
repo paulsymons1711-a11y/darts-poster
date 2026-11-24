@@ -46,6 +46,9 @@ async function install(sha, log = console.log) {
   // Quick syntax check before swapping anything in
   for (const f of fs.readdirSync(path.join(top, 'src')).filter(f => f.endsWith('.js')))
     execSync(`node --check "${path.join(top, 'src', f)}"`);
+  const html = fs.readFileSync(path.join(top, 'src', 'dashboard.html'), 'utf8');
+  try { new Function('return async () => {' + (html.match(/<script>([\s\S]*)<\/script>/) || [])[1] + '}'); }
+  catch (e) { throw new Error('New dashboard has an error, not installing: ' + e.message); }
 
   const backup = path.join(ROOT, 'backup');
   fs.rmSync(backup, { recursive: true, force: true }); fs.mkdirSync(backup);
@@ -63,12 +66,20 @@ async function install(sha, log = console.log) {
   setTimeout(() => process.exit(0), 1500); // run.bat starts it again
 }
 
+const vnum = v => String(v || '0').split('.').reduce((a, n) => a * 1000 + (+n || 0), 0);
+async function remoteVersion(sha) {
+  const r = await fetch(`https://api.github.com/repos/${CONFIG.github.repo}/contents/package.json?ref=${sha}`,
+    { headers: { ...headers(), Accept: 'application/vnd.github.raw+json' } });
+  if (!r.ok) throw new Error(`Could not read version (${r.status})`);
+  return JSON.parse(await r.text()).version;
+}
 async function checkAndInstall(log = console.log, force = false) {
   const l = await latest();
-  if (l.sha === CONFIG.github.installedSha) return { upToDate: true, ...l };
-  if (!CONFIG.github.installedSha && !force) { // first check: just remember the current version
-    CONFIG.github.installedSha = l.sha; saveConfig(); return { upToDate: true, ...l };
-  }
+  const mine = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
+  const theirs = await remoteVersion(l.sha);
+  l.version = theirs;
+  if (vnum(theirs) <= vnum(mine))
+    return { upToDate: true, ...l };
   log(`New version on GitHub: ${l.message}`);
   await install(l.sha, log);
   return { installing: true, ...l };

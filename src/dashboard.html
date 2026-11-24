@@ -52,7 +52,7 @@ async function api(url){
 async function load(){
   const s = await api('/api/state');
   const vName = k => (s.venues.find(v=>v.key===k)||{}).displayName||k;
-  $('#banner').innerHTML = (s.lastError ? `<div class="banner" style="background:#fde2e0;border-color:#f2a9a4;margin-bottom:8px">⚠️ ${s.lastError}</div>` : '') + (s.dryRun ? '<div class="banner">🧪 <b>Test mode</b> – nothing is sent to Facebook. Turn it off in Settings at the bottom when you're ready.</div>' : '')
+  $('#banner').innerHTML = (s.lastError ? `<div class="banner" style="background:#fde2e0;border-color:#f2a9a4;margin-bottom:8px">⚠️ ${s.lastError}</div>` : '') + (s.dryRun ? '<div class="banner">🧪 <b>Test mode</b> – nothing is sent to Facebook. Turn it off in Settings at the bottom when ready.</div>' : '')
     + s.venues.filter(v=>v.enabled!==false&&!v.connected).map(v=>`<div class="banner" style="margin-top:8px">${v.displayName}: Facebook Page not connected yet.</div>`).join('');
   $('#events').innerHTML = s.events.map(e=>`<div class="card ev"><div><b>${e.eventName}</b> <small>· ${vName(e.venueKey)}</small><br><small>${fmt(e.start)}${e.fee?' · '+e.fee:''}</small></div>
      <div class="cnt"><button class="round" onclick="act('/api/events/${e.id}/count',this,{count:${e.posts-1}})">−</button><span>${e.posts}</span>
