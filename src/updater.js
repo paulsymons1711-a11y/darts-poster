@@ -18,7 +18,7 @@ async function latest() {
   if (!g.repo) throw new Error('No GitHub repo set');
   const r = await fetch(`https://api.github.com/repos/${g.repo}/commits/${g.branch || 'main'}`, { headers: headers() });
   if (r.status === 401 || r.status === 403) throw new Error('GitHub rejected the token');
-  if (r.status === 404) throw new Error('Repo not found – check the name and that the token can read it');
+  if (r.status === 404) throw new Error('Repo not found – make the darts-poster repo public on GitHub (or add a token)');
   if (!r.ok) throw new Error(`GitHub error ${r.status}`);
   const d = await r.json();
   return { sha: d.sha, message: (d.commit?.message || '').split('\n')[0], date: d.commit?.committer?.date };

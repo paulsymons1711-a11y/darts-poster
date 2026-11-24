@@ -72,10 +72,10 @@ async function loadSettings(){
     <label>Facebook Page token ${v.hasToken?'<span class="ok">✓ saved</span>':''}</label><input type="password" class="tok" placeholder="${v.hasToken?'Leave blank to keep':'Paste token'}"></div>`).join('')
   + `<div class="card"><b>Updates from GitHub</b>
     <label>Repo</label><input type="text" id="repo" value="${c.github.repo||''}">
-    <label>Token (Contents: read-only) ${c.github.hasToken?'<span class="ok">✓ saved</span>':''}</label><input type="password" id="gtok" placeholder="${c.github.hasToken?'Leave blank to keep':'Paste token'}">
+    <label>Token (only needed if the repo is private) ${c.github.hasToken?'<span class="ok">✓ saved</span>':''}</label><input type="password" id="gtok" placeholder="${c.github.hasToken?'Leave blank to keep':'Paste token'}">
     <label class="sw"><input type="checkbox" id="auto" ${c.github.auto?'checked':''}> Install new versions automatically</label>
     <div class="mut" style="font-size:13px">Installed: ${(c.github.installedSha||'–').slice(0,7)}</div>
-    <div class="acts" style="margin-top:10px"><button onclick="checkUpdate(this)">Check for updates now</button></div><div id="upd" class="mut"></div></div>
+    <div class="acts" style="margin-top:10px"><button onclick="checkUpdate(this)">Install updates</button></div><div id="upd" class="mut"></div></div>
     <div class="card"><label>New dashboard password (leave blank to keep)</label><input type="password" id="npw"></div>
     <button class="p" style="width:100%;padding:14px" onclick="saveSettings(this)">Save settings</button><div id="saved" class="ok" style="text-align:center;margin:8px"></div>`;
 }

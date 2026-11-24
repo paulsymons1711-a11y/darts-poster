@@ -217,6 +217,6 @@ cron.schedule('*/10 * * * *', publishDue);          // post anything due
 cron.schedule('5 */6 * * *', refresh);              // re-read Darts Atlas 4× a day
 cron.schedule('20 * * * *', learn);                 // check engagement hourly
 cron.schedule('40 * * * *', () => {                // check GitHub for updates hourly
-  if (CONFIG.github?.auto && CONFIG.github.token) updater.checkAndInstall(log).catch(e => log(`Update check failed: ${e.message}`));
+  if (CONFIG.github?.auto) updater.checkAndInstall(log).catch(e => log(`Update check failed: ${e.message}`));
 });
 refresh().then(publishDue);
