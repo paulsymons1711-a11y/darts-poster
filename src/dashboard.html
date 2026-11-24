@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Darts Poster</title>
+<link rel="manifest" href="/static/manifest.json"><link rel="apple-touch-icon" href="/static/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1b1d21">
+<style>
+  :root{--bg:#f4f4f2;--card:#fff;--ink:#1b1d21;--mut:#6b7078;--acc:#d7261e;--ok:#1f7a4d}
+  *{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--ink);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2}
+  header b{font-size:18px}main{max-width:900px;margin:auto;padding:16px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:26px 0 10px}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+  .banner{background:#fff4d6;border:1px solid #f0d58a;border-radius:10px;padding:10px 14px}
+  .ev{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .ev small,.mut{color:var(--mut)}
+  .cnt{display:flex;align-items:center;gap:8px}.cnt span{min-width:18px;text-align:center;font-weight:700}
+  button{border:0;border-radius:8px;padding:8px 12px;font:600 14px system-ui;cursor:pointer;background:#e7e7e4;color:var(--ink)}
+  button.p{background:var(--acc);color:#fff}button.round{width:34px;height:34px;padding:0;font-size:18px}
+  .post{display:grid;grid-template-columns:140px 1fr;gap:14px}.post img{width:140px;height:140px;border-radius:8px;object-fit:cover}
+  .post pre{white-space:pre-wrap;font:13px/1.4 system-ui;margin:6px 0;color:#333;max-height:110px;overflow:auto}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;background:#eee}
+  .tag.posted{background:#d8f0e2;color:var(--ok)}.tag.error{background:#fbdcda;color:var(--acc)}.tag.dry-run{background:#fff1c4}
+  .acts{display:flex;gap:6px;flex-wrap:wrap}
+  table{width:100%;border-collapse:collapse}td,th{padding:6px;text-align:left;border-bottom:1px solid #eee}
+  label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+  input[type=text],input[type=password],input[type=number]{width:100%;padding:10px;font-size:15px;border:1px solid #ddd;border-radius:8px}
+  .sw{display:flex;align-items:center;gap:10px;margin:10px 0;font-weight:600}.sw input{width:22px;height:22px}
+  .ok{color:var(--ok);font-weight:600}
+  @media(max-width:520px){.post{grid-template-columns:1fr}.post img{width:100%;height:auto}}
+</style></head>
+<body>
+<header><b>🎯 Darts Poster</b><button onclick="act('/api/refresh',this)">Refresh events</button></header>
+<main>
+  <div id="banner"></div>
+  <h2>Upcoming events · posts per event</h2><div id="events"></div>
+  <h2>Post queue</h2><div id="posts"></div>
+  <h2>Best times (learned)</h2><div class="card"><table id="times"></table></div>
+  <h2>Settings</h2><div id="settings"></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const fmt = iso => new Date(iso).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+async function act(url, btn, body){ if(btn){btn.disabled=true;btn.textContent='…'}
+  await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}); load(); }
+async function load(){
+  const s = await (await fetch('/api/state')).json();
+  const vName = k => (s.venues.find(v=>v.key===k)||{}).displayName||k;
+  $('#banner').innerHTML = (s.dryRun ? '<div class="banner">🧪 <b>Test mode</b> – nothing is sent to Facebook. Turn it off in Settings at the bottom when you're ready.</div>' : '')
+    + s.venues.filter(v=>v.enabled!==false&&!v.connected).map(v=>`<div class="banner" style="margin-top:8px">${v.displayName}: Facebook Page not connected yet.</div>`).join('');
+  $('#events').innerHTML = s.events.map(e=>`<div class="card ev"><div><b>${e.eventName}</b> <small>· ${vName(e.venueKey)}</small><br><small>${fmt(e.start)}${e.fee?' · '+e.fee:''}</small></div>
+     <div class="cnt"><button class="round" onclick="act('/api/events/${e.id}/count',this,{count:${e.posts-1}})">−</button><span>${e.posts}</span>
+     <button class="round" onclick="act('/api/events/${e.id}/count',this,{count:${e.posts+1}})">+</button></div></div>`).join('') || '<div class="card mut">No upcoming events found yet.</div>';
+  $('#posts').innerHTML = s.posts.slice().reverse().map(p=>`<div class="card post"><img src="/img/${p.image}?v=${p.v||0}">
+     <div><span class="tag ${p.status}">${p.status}</span> <b>${fmt(p.when)}</b> <small class="mut">· ${vName(p.venueKey)} · design ${p.design+1}</small>
+     <pre>${p.caption.replace(/</g,'&lt;')}</pre>${p.error?`<div class="mut">⚠️ ${p.error}</div>`:''}
+     ${p.status==='planned'||p.status==='error'?`<div class="acts"><button class="p" onclick="act('/api/posts/${p.id}/now',this)">Post now</button>
+       <button onclick="act('/api/posts/${p.id}/redo',this)">New design</button><button onclick="act('/api/posts/${p.id}/skip',this)">Skip</button></div>`:''}
+     ${p.engagement?`<small class="mut">👍 ${p.engagement.reactions} · 💬 ${p.engagement.comments} · 🔁 ${p.engagement.shares}</small>`:''}</div></div>`).join('') || '<div class="card mut">Nothing queued.</div>';
+  $('#times').innerHTML = '<tr><th>Time</th><th>Posts scored</th><th>Avg engagement</th></tr>' + s.slotHours.map(h=>{const t=s.slotStats[h]||{n:0,total:0};
+     return `<tr><td>${h}:00</td><td>${t.n}</td><td>${t.n?(t.total/t.n).toFixed(1):'–'}</td></tr>`}).join('');
+}
+async function loadSettings(){
+  const c = await (await fetch('/api/settings')).json();
+  $('#settings').innerHTML = `<div class="card"><label class="sw"><input type="checkbox" id="dry" ${c.dryRun?'checked':''}> Test mode (don't post to Facebook)</label>
+    <label>Posting times to try (24h, comma separated)</label><input type="text" id="hours" value="${c.slotHours.join(', ')}">
+    <label>Plan posts this many days ahead</label><input type="number" id="days" value="${c.planDaysAhead}"></div>`
+  + c.venues.map(v=>`<div class="card venue" data-key="${v.key}"><label class="sw"><input type="checkbox" class="en" ${v.enabled!==false?'checked':''}> ${v.displayName}</label>
+    <label>Name on images</label><input type="text" class="dn" value="${v.displayName}">
+    <label>Darts Atlas venue link</label><input type="text" class="da" value="${v.dartsAtlasUrl}">
+    <label>Posts per event (default)</label><input type="number" class="pp" min="0" max="5" value="${v.postsPerEvent??2}">
+    <label>Facebook Page ID</label><input type="text" class="pid" value="${v.facebookPageId||''}">
+    <label>Facebook Page token ${v.hasToken?'<span class="ok">✓ saved</span>':''}</label><input type="password" class="tok" placeholder="${v.hasToken?'Leave blank to keep':'Paste token'}"></div>`).join('')
+  + `<div class="card"><b>Updates from GitHub</b>
+    <label>Repo</label><input type="text" id="repo" value="${c.github.repo||''}">
+    <label>Token (Contents: read-only) ${c.github.hasToken?'<span class="ok">✓ saved</span>':''}</label><input type="password" id="gtok" placeholder="${c.github.hasToken?'Leave blank to keep':'Paste token'}">
+    <label class="sw"><input type="checkbox" id="auto" ${c.github.auto?'checked':''}> Install new versions automatically</label>
+    <div class="mut" style="font-size:13px">Installed: ${(c.github.installedSha||'–').slice(0,7)}</div>
+    <div class="acts" style="margin-top:10px"><button onclick="checkUpdate(this)">Check for updates now</button></div><div id="upd" class="mut"></div></div>
+    <div class="card"><label>New dashboard password (leave blank to keep)</label><input type="password" id="npw"></div>
+    <button class="p" style="width:100%;padding:14px" onclick="saveSettings(this)">Save settings</button><div id="saved" class="ok" style="text-align:center;margin:8px"></div>`;
+}
+async function saveSettings(btn){
+  const body = { dryRun: $('#dry').checked, planDaysAhead: +$('#days').value,
+    slotHours: $('#hours').value.split(',').map(x=>parseInt(x)).filter(x=>!isNaN(x)), newPassword: $('#npw').value,
+    venues: [...document.querySelectorAll('.venue')].map(d=>({ key:d.dataset.key, enabled:d.querySelector('.en').checked,
+      displayName:d.querySelector('.dn').value, dartsAtlasUrl:d.querySelector('.da').value, postsPerEvent:+d.querySelector('.pp').value,
+      facebookPageId:d.querySelector('.pid').value, facebookPageToken:d.querySelector('.tok').value })),
+    github: { repo: $('#repo').value, token: $('#gtok').value, auto: $('#auto').checked } };
+  btn.disabled = true; await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  btn.disabled = false; $('#saved').textContent = '✓ Saved'; setTimeout(()=>$('#saved').textContent='',3000); loadSettings(); load();
+}
+async function checkUpdate(btn){ btn.disabled=true; $('#upd').textContent='Checking…';
+  const r = await (await fetch('/api/update/check',{method:'POST'})).json();
+  $('#upd').textContent = r.error ? '⚠️ '+r.error : r.installing ? '⬇️ Installing "'+r.message+'" – restarting, reload in 30s' : '✓ Up to date ('+r.message+')'; btn.disabled=false; }
+load(); loadSettings(); setInterval(load, 60000);
+</script></body></html>

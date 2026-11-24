@@ -1,0 +1,10 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Darts Poster</title><link rel="manifest" href="/static/manifest.json"><link rel="apple-touch-icon" href="/static/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1b1d21">
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#1b1d21;font:16px system-ui,-apple-system,sans-serif}
+form{background:#fff;padding:28px;border-radius:16px;width:min(340px,90vw);text-align:center}img{width:72px;border-radius:16px}
+input{width:100%;box-sizing:border-box;padding:14px;font-size:16px;border:1px solid #ccc;border-radius:10px;margin:16px 0 10px}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#d7261e;color:#fff;font:700 16px system-ui}.bad{color:#d7261e}</style></head>
+<body><form method="post" action="/login"><img src="/static/icon-180.png"><h2 style="margin:10px 0 0">Darts Poster</h2>
+<input type="password" name="password" placeholder="Password" autofocus required><div class="bad" id="b"></div><button>Log in</button></form>
+<script>if(location.search.includes('bad'))b.textContent='Wrong password'</script></body></html>

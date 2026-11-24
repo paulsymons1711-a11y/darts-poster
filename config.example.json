@@ -1,0 +1,33 @@
+{
+  "dryRun": true,
+  "port": 3060,
+  "dashboardPassword": "",
+  "planDaysAhead": 7,
+  "slotHours": [
+    8,
+    12,
+    17,
+    19,
+    21
+  ],
+  "venues": [
+    {
+      "key": "olivers",
+      "displayName": "Oliver's",
+      "dartsAtlasUrl": "https://www.dartsatlas.com/venues/olivers-sports-bar",
+      "postsPerEvent": 2,
+      "facebookPageId": "",
+      "facebookPageToken": "",
+      "enabled": true
+    },
+    {
+      "key": "wern",
+      "displayName": "The Wern",
+      "dartsAtlasUrl": "https://www.dartsatlas.com/venues/wern-fawr-inn",
+      "postsPerEvent": 2,
+      "facebookPageId": "",
+      "facebookPageToken": "",
+      "enabled": false
+    }
+  ]
+}
